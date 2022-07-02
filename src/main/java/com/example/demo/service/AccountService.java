@@ -7,6 +7,7 @@ import com.example.demo.account.GetOneByNameRequest;
 import com.example.demo.dto.Account;
 import com.example.demo.mapper.Mapper;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -49,7 +50,7 @@ public class AccountService {
                     @Override
                     public void onError(Throwable throwable) {
                         Status status = Status.fromThrowable(throwable);
-                        log.warn("Error: {}", status);
+                        log.error("Error: {}", status);
                         finishLatch.countDown();
                     }
 
