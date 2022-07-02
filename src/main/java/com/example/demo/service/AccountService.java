@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.account.AccountServiceGrpc;
+import com.example.demo.account.CreateAccountRequest;
 import com.example.demo.account.GetAllRequest;
 import com.example.demo.account.GetOneByNameRequest;
 import com.example.demo.dto.Account;
@@ -62,5 +63,12 @@ public class AccountService {
         // Receiving happens asynchronously
         boolean await = finishLatch.await(1, TimeUnit.MINUTES);
         return await ? accounts : Collections.emptyList();
+    }
+
+    public Account createAccount(String name) {
+        com.example.demo.account.Account account = synchronousAccountServiceClient.createAccount(CreateAccountRequest.newBuilder()
+                .setName(name)
+                .build());
+        return Mapper.buildAccountResponse(account);
     }
 }

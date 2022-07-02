@@ -1,15 +1,15 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.Account;
+import com.example.demo.dto.Balance;
+import com.example.demo.dto.CreateAccountRequest;
+import com.example.demo.dto.CreateBalanceRequest;
 import com.example.demo.service.AccountService;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import com.example.demo.service.BalanceService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,21 +19,11 @@ import java.util.List;
 public class ClientController {
 
     final AccountService accountService;
+    final BalanceService balanceService;
 
     @GetMapping("/api/accounts/{name}")
     public ResponseEntity<Account> getOneByName(@PathVariable String name) {
-        try {
-            return ResponseEntity.ok(accountService.getOneByName(name));
-        } catch (StatusRuntimeException e) {
-            log.error(e.getMessage(), e);
-            if (Status.NOT_FOUND.equals(e.getStatus())) {
-                return ResponseEntity.notFound().build();
-            }
-            if (Status.FAILED_PRECONDITION.equals(e.getStatus())) {
-                return ResponseEntity.badRequest().build();
-            }
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok(accountService.getOneByName(name));
     }
 
     @GetMapping("/api/accounts")
@@ -45,15 +35,16 @@ public class ClientController {
             // Restore interrupted state...
             Thread.currentThread().interrupt();
             return ResponseEntity.internalServerError().build();
-        } catch (StatusRuntimeException e) {
-            log.error(e.getMessage(), e);
-            if (Status.NOT_FOUND.equals(e.getStatus())) {
-                return ResponseEntity.notFound().build();
-            }
-            if (Status.FAILED_PRECONDITION.equals(e.getStatus())) {
-                return ResponseEntity.badRequest().build();
-            }
-            return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @PostMapping("/api/accounts")
+    public ResponseEntity<Account> createAccount(@RequestBody CreateAccountRequest request) {
+        return ResponseEntity.ok(accountService.createAccount(request.getName()));
+    }
+
+    @PostMapping("/api/balances")
+    public ResponseEntity<Balance> createBalance(@RequestBody CreateBalanceRequest request) {
+        return ResponseEntity.ok(balanceService.createBalance(request));
     }
 }

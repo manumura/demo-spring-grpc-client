@@ -1,11 +1,15 @@
 package com.example.demo.mapper;
 
 import com.example.demo.dto.Account;
+import com.example.demo.dto.Balance;
 import com.example.demo.util.ConvertionUtils;
+
+import java.util.UUID;
 
 public class Mapper {
 
-    private Mapper() {}
+    private Mapper() {
+    }
 
     public static Account buildAccountResponse(com.example.demo.account.Account account) {
         return Account.builder()
@@ -18,13 +22,13 @@ public class Mapper {
                 .build();
     }
 
-//    public static com.example.demo.balance.Balance buildBalanceResponse(Balance b) {
-//        com.example.demo.balance.Balance.Builder builder = com.example.demo.balance.Balance.newBuilder();
-//        builder.setId(b.getId().toString())
-//                .setBalance(b.getBalance())
-//                .setAccountId(b.getAccountId())
-//                .setCreatedBy(b.getCreatedBy())
-//                .setCreatedDate(ConvertionUtils.toGoogleTimestampUTC(b.getCreatedDate()));
-//        return builder.build();
-//    }
+    public static Balance buildBalanceResponse(com.example.demo.balance.Balance balance) {
+        return Balance.builder()
+                .id(UUID.fromString(balance.getId()))
+                .accountId(balance.getAccountId())
+                .balance(balance.getBalance())
+                .createdBy(balance.getCreatedBy())
+                .createdDate(ConvertionUtils.fromGoogleTimestampUTC(balance.getCreatedDate()))
+                .build();
+    }
 }
