@@ -2,16 +2,26 @@ grpc:
   client:
     balance-service:
       address: static://localhost:9090
+      # https://yidongnan.github.io/grpc-spring-boot-starter/en/client/security.html
       negotiation-type: TLS
       security:
         trust-cert-collection: classpath:certificates/server.crt
+        clientAuthEnabled: true
+        certificateChain: classpath:certificates/client.crt
+        privateKey: classpath:certificates/client.key
     account-service:
       address: static://localhost:9090
       negotiation-type: TLS
       security:
         trust-cert-collection: classpath:certificates/server.crt
+        clientAuthEnabled: true
+        certificateChain: classpath:certificates/client.crt
+        privateKey: classpath:certificates/client.key
     transaction-service:
       address: static://localhost:9090
       negotiation-type: TLS
       security:
         trust-cert-collection: classpath:certificates/server.crt
+        clientAuthEnabled: true
+        certificateChain: classpath:certificates/client.crt
+        privateKey: classpath:certificates/client.key
