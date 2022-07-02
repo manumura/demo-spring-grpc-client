@@ -1,9 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.Account;
-import com.example.demo.dto.Balance;
-import com.example.demo.dto.CreateAccountRequest;
-import com.example.demo.dto.CreateBalanceRequest;
+import com.example.demo.dto.*;
 import com.example.demo.service.AccountService;
 import com.example.demo.service.BalanceService;
 import lombok.AllArgsConstructor;
@@ -41,6 +38,11 @@ public class ClientController {
     @PostMapping("/api/accounts")
     public ResponseEntity<Account> createAccount(@RequestBody CreateAccountRequest request) {
         return ResponseEntity.ok(accountService.createAccount(request.getName()));
+    }
+
+    @PutMapping("/api/accounts/{id}")
+    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody UpdateAccountRequest request) {
+        return ResponseEntity.ok(accountService.updateAccount(id, request.getName()));
     }
 
     @PostMapping("/api/balances")

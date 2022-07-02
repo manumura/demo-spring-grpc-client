@@ -1,13 +1,9 @@
 package com.example.demo.service;
 
-import com.example.demo.account.AccountServiceGrpc;
-import com.example.demo.account.CreateAccountRequest;
-import com.example.demo.account.GetAllRequest;
-import com.example.demo.account.GetOneByNameRequest;
+import com.example.demo.account.*;
 import com.example.demo.dto.Account;
 import com.example.demo.mapper.Mapper;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -68,6 +64,14 @@ public class AccountService {
 
     public Account createAccount(String name) {
         com.example.demo.account.Account account = synchronousAccountServiceClient.createAccount(CreateAccountRequest.newBuilder()
+                .setName(name)
+                .build());
+        return Mapper.buildAccountResponse(account);
+    }
+
+    public Account updateAccount(Long id, String name) {
+        com.example.demo.account.Account account = synchronousAccountServiceClient.updateAccount(UpdateAccountRequest.newBuilder()
+                .setId(id)
                 .setName(name)
                 .build());
         return Mapper.buildAccountResponse(account);
