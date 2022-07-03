@@ -7,8 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -19,34 +19,27 @@ public class ClientController {
     final BalanceService balanceService;
 
     @GetMapping("/api/accounts/{name}")
-    public ResponseEntity<Account> getOneByName(@PathVariable String name) {
+    public ResponseEntity<Mono<Account>> getOneByName(@PathVariable String name) {
         return ResponseEntity.ok(accountService.getOneByName(name));
     }
 
     @GetMapping("/api/accounts")
-    public ResponseEntity<List<Account>> getAll() {
-        try {
-            return ResponseEntity.ok(accountService.getAll());
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
-            // Restore interrupted state...
-            Thread.currentThread().interrupt();
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<Flux<Account>> getAll() {
+        return ResponseEntity.ok(accountService.getAll());
     }
 
     @PostMapping("/api/accounts")
-    public ResponseEntity<Account> createAccount(@RequestBody CreateAccountRequest request) {
+    public ResponseEntity<Mono<Account>> createAccount(@RequestBody CreateAccountRequest request) {
         return ResponseEntity.ok(accountService.createAccount(request.getName()));
     }
 
     @PutMapping("/api/accounts/{id}")
-    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody UpdateAccountRequest request) {
+    public ResponseEntity<Mono<Account>> updateAccount(@PathVariable Long id, @RequestBody UpdateAccountRequest request) {
         return ResponseEntity.ok(accountService.updateAccount(id, request.getName()));
     }
 
     @PostMapping("/api/balances")
-    public ResponseEntity<Balance> createBalance(@RequestBody CreateBalanceRequest request) {
+    public ResponseEntity<Mono<Balance>> createBalance(@RequestBody CreateBalanceRequest request) {
         return ResponseEntity.ok(balanceService.createBalance(request));
     }
 }
