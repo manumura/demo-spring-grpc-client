@@ -1,6 +1,11 @@
 package com.example.demo.service;
 
-import com.example.demo.account.*;
+import com.example.demo.account.AccountServiceGrpc;
+import com.example.demo.account.CreateAccountRequest;
+import com.example.demo.account.GetAllRequest;
+import com.example.demo.account.GetOneByNameRequest;
+import com.example.demo.account.ReactorAccountServiceGrpc;
+import com.example.demo.account.UpdateAccountRequest;
 import com.example.demo.dto.Account;
 import com.example.demo.mapper.Mapper;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +13,9 @@ import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
+
+import javax.annotation.PostConstruct;
 
 @Slf4j
 @Service
@@ -19,30 +27,62 @@ public class AccountService {
     @GrpcClient("account-service")
     private AccountServiceGrpc.AccountServiceStub asynchronousAccountServiceClient;
 
+    // http://www.stackstalk.com/2022/01/server-sent-events-with-spring-webflux.html
+    // https://reflectoring.io/getting-started-with-spring-webflux/
+    private final Sinks.Many<Account> accountsSink = Sinks.many().replay().all();
+    // private final Sinks.Many<Account> accountsSink = Sinks.many().multicast().onBackpressureBuffer();
+
+    // Init the stream of accounts with existing accounts
+    @PostConstruct
+    public void init() {
+        this.getAll().map(account -> {
+            var result = accountsSink.tryEmitNext(account);
+            if (result.isFailure()) {
+                // do something here, since emission failed
+                log.error("Sink event emitter failure: {}", result);
+            }
+            return result;
+        }).subscribe();
+    }
+
     public Mono<Account> getOneByName(String name) {
-        Mono<com.example.demo.account.Account> a = synchronousAccountServiceClient.getOneByName(GetOneByNameRequest.newBuilder()
-                .setName(name)
-                .build());
-        return a.map(Mapper::buildAccountResponse);
+        return synchronousAccountServiceClient.getOneByName(GetOneByNameRequest.newBuilder()
+                        .setName(name)
+                        .build())
+                .map(Mapper::buildAccountResponse);
+    }
+
+    // TODO takeUntil https://stackoverflow.com/questions/47933765/terminate-particular-flux-stream-on-the-server
+    public Flux<Account> streamAll() {
+        return accountsSink.asFlux();
     }
 
     public Flux<Account> getAll() {
-        Flux<com.example.demo.account.Account> accounts = synchronousAccountServiceClient.getAll(GetAllRequest.newBuilder().build());
-        return accounts.map(Mapper::buildAccountResponse);
+        return synchronousAccountServiceClient.getAll(GetAllRequest.newBuilder().build())
+                .map(Mapper::buildAccountResponse);
     }
 
     public Mono<Account> createAccount(String name) {
-        Mono<com.example.demo.account.Account> a = synchronousAccountServiceClient.createAccount(CreateAccountRequest.newBuilder()
+        CreateAccountRequest request = CreateAccountRequest.newBuilder()
                 .setName(name)
-                .build());
-        return a.map(Mapper::buildAccountResponse);
+                .build();
+        return synchronousAccountServiceClient.createAccount(request)
+                .map(Mapper::buildAccountResponse)
+                .doOnSuccess(account -> {
+                    var result = accountsSink.tryEmitNext(account);
+                    if (result.isFailure()) {
+                        // do something here, since emission failed
+                        log.error("Sink event emitter failure: {}", result);
+                    }
+                });
     }
 
+    // TODO push update to sink
     public Mono<Account> updateAccount(Long id, String name) {
-        Mono<com.example.demo.account.Account> a = synchronousAccountServiceClient.updateAccount(UpdateAccountRequest.newBuilder()
-                .setId(id)
-                .setName(name)
-                .build());
-        return a.map(Mapper::buildAccountResponse);
+        return synchronousAccountServiceClient.updateAccount(UpdateAccountRequest.newBuilder()
+                        .setId(id)
+                        .setName(name)
+                        .build())
+                .map(Mapper::buildAccountResponse);
     }
 }
