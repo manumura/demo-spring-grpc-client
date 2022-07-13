@@ -77,12 +77,19 @@ public class AccountService {
                 });
     }
 
-    // TODO push update to sink
     public Mono<Account> updateAccount(Long id, String name) {
-        return synchronousAccountServiceClient.updateAccount(UpdateAccountRequest.newBuilder()
-                        .setId(id)
-                        .setName(name)
-                        .build())
-                .map(Mapper::buildAccountResponse);
+        UpdateAccountRequest request = UpdateAccountRequest.newBuilder()
+                .setId(id)
+                .setName(name)
+                .build();
+        return synchronousAccountServiceClient.updateAccount(request)
+                .map(Mapper::buildAccountResponse)
+                .doOnSuccess(account -> {
+                    var result = accountsSink.tryEmitNext(account);
+                    if (result.isFailure()) {
+                        // do something here, since emission failed
+                        log.error("Sink event emitter failure: {}", result);
+                    }
+                });
     }
 }

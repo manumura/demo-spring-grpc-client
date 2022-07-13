@@ -29,7 +29,7 @@ public class ClientController {
     final BalanceService balanceService;
 
     // curl --location --request GET 'http://localhost:8080/api/stream/accounts'
-    @GetMapping(value = "/api/stream/accounts", produces = MediaType.APPLICATION_NDJSON_VALUE) // TEXT_EVENT_STREAM_VALUE
+    @GetMapping(value = "/api/stream/accounts", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // APPLICATION_NDJSON_VALUE
     public Flux<Account> streamAll() {
         return accountService.streamAll();
     }
