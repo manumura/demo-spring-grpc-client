@@ -31,6 +31,7 @@ public class ClientController {
     // curl --location --request GET 'http://localhost:8080/api/stream/accounts'
     @GetMapping(value = "/api/stream/accounts", produces = MediaType.TEXT_EVENT_STREAM_VALUE) // APPLICATION_NDJSON_VALUE
     public Flux<Account> streamAll() {
+        log.info("Streaming accounts");
         return accountService.streamAll();
     }
 

@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import javax.annotation.PostConstruct;
+import java.util.Comparator;
 
 @Slf4j
 @Service
@@ -29,21 +30,21 @@ public class AccountService {
 
     // http://www.stackstalk.com/2022/01/server-sent-events-with-spring-webflux.html
     // https://reflectoring.io/getting-started-with-spring-webflux/
-    private final Sinks.Many<Account> accountsSink = Sinks.many().replay().all();
-    // private final Sinks.Many<Account> accountsSink = Sinks.many().multicast().onBackpressureBuffer();
+//    private final Sinks.Many<Account> accountsSink = Sinks.many().replay().latest();
+     private final Sinks.Many<Account> accountsSink = Sinks.many().multicast().directBestEffort(); // onBackpressureBuffer()
 
     // Init the stream of accounts with existing accounts
-    @PostConstruct
-    public void init() {
-        this.getAll().map(account -> {
-            var result = accountsSink.tryEmitNext(account);
-            if (result.isFailure()) {
-                // do something here, since emission failed
-                log.error("Sink event emitter failure: {}", result);
-            }
-            return result;
-        }).subscribe();
-    }
+//    @PostConstruct
+//    public void init() {
+//        this.getAll().map(account -> {
+//            var result = accountsSink.tryEmitNext(account);
+//            if (result.isFailure()) {
+//                // do something here, since emission failed
+//                log.error("Sink event emitter failure: {}", result);
+//            }
+//            return result;
+//        }).subscribe();
+//    }
 
     public Mono<Account> getOneByName(String name) {
         return synchronousAccountServiceClient.getOneByName(GetOneByNameRequest.newBuilder()
@@ -59,7 +60,8 @@ public class AccountService {
 
     public Flux<Account> getAll() {
         return synchronousAccountServiceClient.getAll(GetAllRequest.newBuilder().build())
-                .map(Mapper::buildAccountResponse);
+                .map(Mapper::buildAccountResponse)
+                .sort(Comparator.comparing(Account::getId));
     }
 
     public Mono<Account> createAccount(String name) {
