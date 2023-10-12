@@ -1,12 +1,10 @@
 package com.example.demo.service;
 
-import com.example.demo.account.AccountServiceGrpc;
-import com.example.demo.account.CreateAccountRequest;
-import com.example.demo.account.GetAllRequest;
-import com.example.demo.account.GetOneByNameRequest;
-import com.example.demo.account.ReactorAccountServiceGrpc;
-import com.example.demo.account.UpdateAccountRequest;
+import com.example.demo.account.*;
 import com.example.demo.dto.Account;
+import com.example.demo.dto.AccountEvent;
+import com.example.demo.dto.EventType;
+import com.example.demo.exception.NotFoundException;
 import com.example.demo.mapper.Mapper;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -30,8 +28,8 @@ public class AccountService {
 
     // http://www.stackstalk.com/2022/01/server-sent-events-with-spring-webflux.html
     // https://reflectoring.io/getting-started-with-spring-webflux/
+    private final Sinks.Many<AccountEvent> accountsSink = Sinks.many().multicast().directBestEffort(); // onBackpressureBuffer()
 //    private final Sinks.Many<Account> accountsSink = Sinks.many().replay().latest();
-     private final Sinks.Many<Account> accountsSink = Sinks.many().multicast().directBestEffort(); // onBackpressureBuffer()
 
     // Init the stream of accounts with existing accounts
 //    @PostConstruct
@@ -54,7 +52,7 @@ public class AccountService {
     }
 
     // TODO takeUntil https://stackoverflow.com/questions/47933765/terminate-particular-flux-stream-on-the-server
-    public Flux<Account> streamAll() {
+    public Flux<AccountEvent> streamAll() {
         return accountsSink.asFlux();
     }
 
@@ -71,7 +69,8 @@ public class AccountService {
         return synchronousAccountServiceClient.createAccount(request)
                 .map(Mapper::buildAccountResponse)
                 .doOnSuccess(account -> {
-                    var result = accountsSink.tryEmitNext(account);
+                    log.info("Account created: {}", account);
+                    var result = accountsSink.tryEmitNext(new AccountEvent(account, EventType.CREATED));
                     if (result.isFailure()) {
                         // do something here, since emission failed
                         log.error("Sink event emitter failure: {}", result);
@@ -87,11 +86,37 @@ public class AccountService {
         return synchronousAccountServiceClient.updateAccount(request)
                 .map(Mapper::buildAccountResponse)
                 .doOnSuccess(account -> {
-                    var result = accountsSink.tryEmitNext(account);
+                    log.info("Account updated: {}", account);
+                    var result = accountsSink.tryEmitNext(new AccountEvent(account, EventType.UPDATED));
                     if (result.isFailure()) {
                         // do something here, since emission failed
                         log.error("Sink event emitter failure: {}", result);
                     }
                 });
+    }
+
+    public Mono<Account> deleteAccount(Long id) {
+        DeleteAccountRequest request = DeleteAccountRequest.newBuilder()
+                .setId(id)
+                .build();
+
+        return synchronousAccountServiceClient.getOneById(GetOneByIdRequest.newBuilder()
+                        .setId(id)
+                        .build())
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Account not found !!!"))))
+                .map(Mapper::buildAccountResponse)
+                .flatMap(account ->
+                        synchronousAccountServiceClient.deleteAccount(request)
+                                .doOnSuccess(
+                                        r -> {
+                                            log.info("Account deleted: {}", account);
+                                            var result = accountsSink.tryEmitNext(new AccountEvent(account, EventType.DELETED));
+                                            if (result.isFailure()) {
+                                                // do something here, since emission failed
+                                                log.error("Sink event emitter failure: {}", result);
+                                            }
+                                        })
+                                .map(r -> account)
+                );
     }
 }
