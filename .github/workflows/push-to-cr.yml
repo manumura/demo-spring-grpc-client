@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     # 3. Steps
     steps:
@@ -96,12 +97,19 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push docker image to Amazon ECR
+        id: build-and-push-image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          echo "Building the Docker image: $REGISTRY/$REPOSITORY:$IMAGE_TAG - $ECR_REGISTRY"
+          docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Display image name
+        id: display-image-name
+        run: |
+          echo "image=${{ steps.build-and-push-image.outputs.image }}"
 
 # Deploy to ECS https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-amazon-elastic-container-service
