@@ -9,6 +9,11 @@ on:
       - "README.md"
   workflow_dispatch:
 
+concurrency:
+  group: |
+    ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ap-southeast-1
   REPOSITORY: demo-reactive-client
@@ -76,7 +81,7 @@ jobs:
       - name: Copy jar to staging directory
         run: mkdir staging && cp target/*.jar staging
 
-      - name: Upload jar to GitHub Artifact
+      - name: Upload jar as artifact
         uses: actions/upload-artifact@v4
         with:
           name: Package
