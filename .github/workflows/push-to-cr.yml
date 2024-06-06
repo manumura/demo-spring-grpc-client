@@ -1,4 +1,5 @@
 # 1. Workflow
+# Debug enabled : see ACTIONS_RUNNER_DEBUG and ACTIONS_STEP_DEBUG in repository secrets
 name: Push Image to Container Registry
 
 on:
@@ -32,6 +33,7 @@ jobs:
       - name: Display pre-build information
         id: display-pre-build
         run: |
+          echo "Current defined paths for the job: $PATH"
           echo "AWS_REGION=$AWS_REGION"
           echo "REPOSITORY=$REPOSITORY"
           echo "ECR_DEPLOY_ROLE_ARN=$ECR_DEPLOY_ROLE_ARN"
